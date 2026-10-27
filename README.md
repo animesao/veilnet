@@ -41,7 +41,7 @@ built as a native Linux alternative to WinDivert-based DPI bypass tools.
 ## Install
 
 ```bash
-git clone https://github.com/yourusername/veilnet.git
+git clone https://github.com/animesao/veilnet.git
 cd veilnet
 
 # generate kernel headers for eBPF

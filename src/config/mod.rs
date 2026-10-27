@@ -4,6 +4,7 @@ use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub struct Config {
     pub interface: Interface,
     /// `[[rule]]` array-of-tables; `rules = []` is also accepted.

@@ -72,7 +72,7 @@ impl VeilnetEvent {
 mod reader {
     use super::VeilnetEvent;
     use anyhow::{Context, Result};
-    use libbpf_rs::{Object, RingBuffer, RingBufferBuilder};
+    use libbpf_rs::{MapCore, Object, RingBuffer, RingBufferBuilder};
     use std::time::Duration;
     use tracing::{info, warn};
 

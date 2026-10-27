@@ -9,7 +9,7 @@ mod imp {
     use crate::rules::build_from_config;
     use anyhow::{bail, Context, Result};
     use libbpf_rs::{MapCore, Object, ObjectBuilder, TcHook, TC_EGRESS, TC_INGRESS};
-    use std::os::fd::{AsFd, AsRawFd};
+    use std::os::fd::AsFd;
     use tracing::info;
 
     pub struct Loader {
@@ -82,23 +82,21 @@ mod imp {
 
             let ifindex = if_nametoindex(iface)? as i32;
 
-            let mut ingress_fd = None;
-            let mut egress_fd = None;
+            let (mut ingress_prog, mut egress_prog) = (None, None);
             for prog in obj.progs_mut() {
                 let name = prog.name().to_string_lossy().to_string();
-                let fd = prog.as_fd().as_raw_fd();
                 match name.as_str() {
-                    "veilnet_ingress" => ingress_fd = Some(fd),
-                    "veilnet_egress" => egress_fd = Some(fd),
+                    "veilnet_ingress" => ingress_prog = Some(prog),
+                    "veilnet_egress" => egress_prog = Some(prog),
                     _ => {}
                 }
             }
 
-            let ingress_fd = ingress_fd.context("veilnet_ingress program not found")?;
-            let egress_fd = egress_fd.context("veilnet_egress program not found")?;
+            let ingress_prog = ingress_prog.context("veilnet_ingress program not found")?;
+            let egress_prog = egress_prog.context("veilnet_egress program not found")?;
 
             // create() also installs the clsact qdisc if missing
-            let mut ingress_hook = TcHook::new(ingress_fd);
+            let mut ingress_hook = TcHook::new(ingress_prog.as_fd());
             ingress_hook
                 .ifindex(ifindex)
                 .attach_point(TC_INGRESS)
@@ -110,7 +108,7 @@ mod imp {
                 .attach()
                 .context("Failed to attach TC ingress filter")?;
 
-            let mut egress_hook = TcHook::new(egress_fd);
+            let mut egress_hook = TcHook::new(egress_prog.as_fd());
             egress_hook
                 .ifindex(ifindex)
                 .attach_point(TC_EGRESS)

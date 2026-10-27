@@ -12,6 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install daemon build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libelf-dev zlib1g-dev pkg-config
       - name: Build veilctl
         run: cargo build -p veilctl --release
       - name: Test veilctl
@@ -30,17 +34,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
       - name: Install eBPF toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang llvm libbpf-dev libelf-dev zlib1g-dev linux-headers-generic
+          sudo apt-get install -y clang llvm libbpf-dev libelf-dev zlib1g-dev
+          BPFTOOL_URL="https://github.com/libbpf/bpftool/releases/download/v7.8.1/bpftool-v7.8.1-amd64.tar.gz"
+          curl -fsSL "$BPFTOOL_URL" -o /tmp/bpftool.tar.gz
+          tar -xzf /tmp/bpftool.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/bpftool /usr/local/bin/bpftool
       - name: Generate vmlinux.h
         run: |
           mkdir -p bpf
-          sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > bpf/vmlinux.h
+          bpftool btf dump file /sys/kernel/btf/vmlinux format c > bpf/vmlinux.h
       - name: Build BPF object
         run: |
+          mkdir -p target
           clang -O2 -g -Wall -target bpf \
             -D__TARGET_ARCH_x86 \
             -Ibpf \

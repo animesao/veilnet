@@ -5,6 +5,8 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
+#include "uapi_defs.h"
+
 #define VEILNET_SNI_MAX 64
 #define VEILNET_HTTP_SCAN_MAX 96
 

@@ -6,9 +6,10 @@ mod imp {
     use crate::config::Config;
     use crate::maps::{RawRuleKey, RawRuleVal};
     use crate::paths::BPF_OBJ_PATH;
-    use crate::rules::{build_from_config, LpmKey, RuleVal};
+    use crate::rules::build_from_config;
     use anyhow::{bail, Context, Result};
     use libbpf_rs::{MapCore, Object, ObjectBuilder, TcHook, TC_EGRESS, TC_INGRESS};
+    use std::os::fd::AsFd;
     use tracing::info;
 
     pub struct Loader {
@@ -30,13 +31,14 @@ mod imp {
             let obj_data = std::fs::read(BPF_OBJ_PATH)
                 .with_context(|| format!("Failed to read BPF object {BPF_OBJ_PATH}"))?;
             let mut obj = ObjectBuilder::new()
-                .open_memory("veilnet", &obj_data)
+                .open_memory(&obj_data)
                 .context("Failed to open BPF object")?
                 .load()
                 .context("Failed to load BPF object")?;
 
             for prog in obj.progs_mut() {
-                info!(prog = prog.name(), "loaded eBPF program");
+                let name = prog.name().to_string_lossy().to_string();
+                info!(prog = %name, "loaded eBPF program");
             }
 
             self.obj = Some(obj);
@@ -48,22 +50,24 @@ mod imp {
                 .obj
                 .as_mut()
                 .context("BPF object not loaded; call load() first")?;
-            let map = obj
-                .map_mut("rules_map")
-                .context("rules_map not found in BPF object")?;
 
             let rules = build_from_config(cfg);
 
             // full re-sync: clear existing entries then insert fresh
-            for key in map.keys().collect::<Vec<_>>() {
-                let _ = map.delete(&key);
-            }
-
-            for (key, val) in &rules {
-                let k = RawRuleKey::from(key).0;
-                let v = RawRuleVal::from(val).0;
-                map.update(&k, &v, libbpf_rs::MapFlags::NO_EXIST)
-                    .context("Failed to insert rule into rules_map")?;
+            for map in obj.maps_mut() {
+                if map.name() != "rules_map" {
+                    continue;
+                }
+                for key in map.keys().collect::<Vec<_>>() {
+                    let _ = map.delete(&key);
+                }
+                for (key, val) in &rules {
+                    let k = RawRuleKey::from(key).0;
+                    let v = RawRuleVal::from(val).0;
+                    map.update(&k, &v, libbpf_rs::MapFlags::NO_EXIST)
+                        .context("Failed to insert rule into rules_map")?;
+                }
+                break;
             }
 
             info!(rules = rules.len(), "synced rules to rules_map");
@@ -78,15 +82,21 @@ mod imp {
 
             let ifindex = if_nametoindex(iface)? as i32;
 
-            let ingress_prog = obj
-                .prog_mut("veilnet_ingress")
-                .context("veilnet_ingress program not found")?;
-            let egress_prog = obj
-                .prog_mut("veilnet_egress")
-                .context("veilnet_egress program not found")?;
+            let mut ingress_fd = None;
+            let mut egress_fd = None;
+            for prog in obj.progs_mut() {
+                match prog.name().to_str() {
+                    Some("veilnet_ingress") => ingress_fd = Some(prog.as_fd()),
+                    Some("veilnet_egress") => egress_fd = Some(prog.as_fd()),
+                    _ => {}
+                }
+            }
+
+            let ingress_fd = ingress_fd.context("veilnet_ingress program not found")?;
+            let egress_fd = egress_fd.context("veilnet_egress program not found")?;
 
             // create() also installs the clsact qdisc if missing
-            let mut ingress_hook = TcHook::new(ingress_prog.fd());
+            let mut ingress_hook = TcHook::new(ingress_fd);
             ingress_hook
                 .ifindex(ifindex)
                 .attach_point(TC_INGRESS)
@@ -98,7 +108,7 @@ mod imp {
                 .attach()
                 .context("Failed to attach TC ingress filter")?;
 
-            let mut egress_hook = TcHook::new(egress_prog.fd());
+            let mut egress_hook = TcHook::new(egress_fd);
             egress_hook
                 .ifindex(ifindex)
                 .attach_point(TC_EGRESS)

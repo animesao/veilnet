@@ -72,7 +72,6 @@ impl VeilnetEvent {
 mod reader {
     use super::VeilnetEvent;
     use anyhow::{Context, Result};
-    use libbpf_rs::MapCore;
     use libbpf_rs::{Object, RingBuffer, RingBufferBuilder};
     use std::time::Duration;
     use tracing::{info, warn};
@@ -84,15 +83,7 @@ mod reader {
 
     impl EventReader {
         /// Attach a ring buffer consumer to the `events_rb` map of a loaded object.
-        /// The object must outlive the reader.
         pub fn new(obj: &mut Object) -> Result<Self> {
-            let map = obj
-                .map_mut("events_rb")
-                .context("events_rb map not found in BPF object")?;
-            let map_ref: &'static dyn MapCore = unsafe { std::mem::transmute(&*map) };
-            // SAFETY: obj is owned by the daemon and outlives the EventReader;
-            // the 'static reference never escapes this struct.
-
             let mut builder = RingBufferBuilder::new();
 
             let cb = move |data: &[u8]| -> i32 {
@@ -116,8 +107,13 @@ mod reader {
                 }
             };
 
+            let map = obj
+                .maps_mut()
+                .find(|m| m.name() == "events_rb")
+                .context("events_rb map not found in BPF object")?;
+
             builder
-                .add(map_ref, cb)
+                .add(&*map, cb)
                 .context("Failed to add ringbuf callback")?;
             let rb = builder.build().context("Failed to build ring buffer")?;
 

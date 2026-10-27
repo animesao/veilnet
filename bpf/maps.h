@@ -5,6 +5,7 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
+#include "uapi_defs.h"
 #include "desync.h"
 
 /* LPM trie key: prefixlen must be the first field for BPF_MAP_TYPE_LPM_TRIE.

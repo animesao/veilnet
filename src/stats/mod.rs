@@ -22,18 +22,21 @@ mod imp {
 
     pub fn read_stats(obj: &mut Object) -> Result<VeilnetStats> {
         let map = obj
-            .map_mut("stats_map")
+            .maps_mut()
+            .find(|m| m.name() == "stats_map")
             .context("stats_map not found in BPF object")?;
 
         let get = |key: u32| -> Result<u64> {
             let k = key.to_ne_bytes();
-            if let Some(bytes) = map.lookup(&k, libbpf_rs::MapFlags::ANY) {
-                let mut arr = [0u8; 8];
-                let n = bytes.len().min(8);
-                arr[..n].copy_from_slice(&bytes[..n]);
-                Ok(u64::from_le_bytes(arr))
-            } else {
-                Ok(0)
+            match map.lookup(&k, libbpf_rs::MapFlags::ANY) {
+                Ok(Some(bytes)) => {
+                    let mut arr = [0u8; 8];
+                    let n = bytes.len().min(8);
+                    arr[..n].copy_from_slice(&bytes[..n]);
+                    Ok(u64::from_le_bytes(arr))
+                }
+                Ok(None) => Ok(0),
+                Err(e) => Err(e).context("Failed to lookup stats_map"),
             }
         };
 

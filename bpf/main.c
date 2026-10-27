@@ -2,10 +2,10 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
-#include "common.h"
+#include "uapi_defs.h"
 #include "veilnet.h"
-#include "maps.h"
 #include "parser.h"
+#include "maps.h"
 #include "desync.h"
 #include "stats.h"
 #include "ringbuf.h"

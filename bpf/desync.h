@@ -1,9 +1,8 @@
 #ifndef __VEILNET_DESYNC_H
 #define __VEILNET_DESYNC_H
 
-#include "vmlinux.h"
-#include <bpf/bpf_helpers.h>
-#include <bpf/bpf_endian.h>
+#include "uapi_defs.h"
+#include "parser.h"
 
 #include "veilnet.h"
 

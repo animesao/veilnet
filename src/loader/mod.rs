@@ -9,7 +9,7 @@ mod imp {
     use crate::rules::build_from_config;
     use anyhow::{bail, Context, Result};
     use libbpf_rs::{MapCore, Object, ObjectBuilder, TcHook, TC_EGRESS, TC_INGRESS};
-    use std::os::fd::AsFd;
+    use std::os::fd::{AsFd, AsRawFd};
     use tracing::info;
 
     pub struct Loader {

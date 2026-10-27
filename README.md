@@ -9,7 +9,9 @@
 [![Language: Rust + C](https://img.shields.io/badge/Rust%20%2B%20C-eBPF-orange.svg)](#tech-stack)
 
 A kernel-level traffic interception tool with flexible per-IP/subnet/domain rules,
-built as a native Linux alternative to WinDivert-based DPI bypass tools.
+built as a native Linux alternative to Windows DPI bypass tools (zapret, WinDivert).
+
+If you're using [zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube) on Windows — veilnet provides the same functionality for Linux.
 
 </div>
 
@@ -27,7 +29,7 @@ built as a native Linux alternative to WinDivert-based DPI bypass tools.
 - **Kernel-level interception** — eBPF programs attached to TC `clsact` on your interface
 - **Rule-based targeting** — apply strategies only to specific IPs, subnets or domains
 - **10 built-in strategies** — ported concepts from zapret: `multisplit`, `fake`, `multidisorder`, `seqovl` and more
-- **Zapret import** — parse existing zapret-discord-youtube `.bat` strategies and translate them to veilnet configs
+- **Windows zapret compatibility** — import and use existing [zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube) `.bat` strategies on Linux
 - **System service** — install once, manage with `systemctl` and `veilctl`
 
 ## Requirements
@@ -39,6 +41,19 @@ built as a native Linux alternative to WinDivert-based DPI bypass tools.
 - Arch Linux recommended; any modern distro works
 
 ## Install
+
+### Quick install (one-liner)
+```bash
+curl -sL https://raw.githubusercontent.com/animesao/veilnet/main/scripts/install.sh | sudo bash
+```
+
+This will:
+- Detect your OS (Arch/Debian/Ubuntu/Fedora/openSUSE)
+- Install dependencies (clang, llvm, libelf, rust, iproute2, systemd)
+- Download pre-built binaries or build from source
+- Configure and start veilnet service
+
+### Manual install
 
 ```bash
 git clone https://github.com/animesao/veilnet.git

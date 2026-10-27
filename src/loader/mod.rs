@@ -30,7 +30,7 @@ mod imp {
         pub fn load(&mut self) -> Result<()> {
             let obj_data = std::fs::read(BPF_OBJ_PATH)
                 .with_context(|| format!("Failed to read BPF object {BPF_OBJ_PATH}"))?;
-            let mut obj = ObjectBuilder::default()
+            let obj = ObjectBuilder::default()
                 .open_memory(&obj_data)
                 .context("Failed to open BPF object")?
                 .load()
@@ -84,10 +84,9 @@ mod imp {
 
             let mut ingress_fd = None;
             let mut egress_fd = None;
-            let prog_names: Vec<_> = obj.progs_mut()
-                .map(|prog| (prog.name().to_string_lossy().to_string(), prog.as_fd()))
-                .collect();
-            for (name, fd) in prog_names {
+            for prog in obj.progs_mut() {
+                let name = prog.name().to_string_lossy().to_string();
+                let fd = prog.as_fd().as_raw_fd();
                 match name.as_str() {
                     "veilnet_ingress" => ingress_fd = Some(fd),
                     "veilnet_egress" => egress_fd = Some(fd),

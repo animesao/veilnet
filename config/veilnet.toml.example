@@ -1,0 +1,34 @@
+# veilnet example configuration
+
+[interface]
+name = "eth0"   # or "auto" to auto-detect the default route interface
+
+# Built-in strategies: none, multisplit, multisplit-seqovl, fake, fake-aggressive,
+# fake-fakedsplit, fake-multidisorder, multidisorder, disorder, split2
+#
+# Strategy presets (see 'veilctl strategies' for details):
+#
+#   multisplit        - classic ClientHello split at position 1
+#   multisplit-seqovl - split + sequence overlap (681)
+#   fake              - fake packets with wrong sequence, 6 repeats
+#   fake-aggressive   - fake with 11 repeats (FAKE TLS AUTO style)
+#   fake-fakedsplit   - fake + split, ts fooling (general ALT style)
+#   fake-multidisorder - fake + disorder + badseq (FAKE TLS AUTO style)
+#   multidisorder     - multiple out-of-order segments, midsld
+#   disorder          - reordering with minimal footprint
+#   split2            - two-segment split at position 2
+
+[[rule]]
+match = { ip = ["8.8.8.8/32"] }
+strategy = "multisplit"
+params = { split_pos = 1, seqovl = 0, repeats = 0, tcp_fooling = "none", udp = false }
+
+[[rule]]
+match = { ip = ["203.0.113.0/24"] }
+strategy = "fake-fakedsplit"
+params = { split_pos = 1, seqovl = 0, repeats = 6, tcp_fooling = "ts", udp = false }
+
+[[rule]]
+match = { domain = ["example.com"] }
+strategy = "fake-multidisorder"
+params = { split_pos = 1, seqovl = 0, repeats = 11, tcp_fooling = "badseq", udp = true }

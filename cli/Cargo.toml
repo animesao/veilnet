@@ -1,0 +1,17 @@
+[package]
+name = "veilctl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "veilnet control CLI"
+
+[[bin]]
+name = "veilctl"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+toml.workspace = true

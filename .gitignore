@@ -1,0 +1,30 @@
+# Rust
+/target
+Cargo.lock
+
+# eBPF
+*.o
+*.skel.h
+vmlinux.h
+bpftool
+
+# Build
+build/
+dist/
+
+# Config
+*.local.toml
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System
+.DS_Store
+Thumbs.db
